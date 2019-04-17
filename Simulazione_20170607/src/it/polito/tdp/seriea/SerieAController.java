@@ -18,7 +18,8 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.Alert.AlertType;
 
 public class SerieAController {
-
+	//prova
+	
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
 
