@@ -39,13 +39,16 @@ public class SerieAController {
     @FXML
     void handleCarica(ActionEvent event) {
     	Season stagione=boxSeason.getValue();
-    	if(stagione !=null) {
-    		model.caricaPartita(stagione);
+    	if(stagione != null) {
+    		
+    		String classifica=model.getClassifica(stagione);
+    		txtResult.setText(classifica);
     		
     		
     	}else {
-    		showAlert("seleziona una stagione!");
+    		showAlert("selezionare una stagione!");
     		}
+  
     }
 
     private void showAlert(String message) {
@@ -65,11 +68,13 @@ public class SerieAController {
         assert boxSeason != null : "fx:id=\"boxSeason\" was not injected: check your FXML file 'SerieA.fxml'.";
         assert boxTeam != null : "fx:id=\"boxTeam\" was not injected: check your FXML file 'SerieA.fxml'.";
         assert txtResult != null : "fx:id=\"txtResult\" was not injected: check your FXML file 'SerieA.fxml'.";
+        
+        boxSeason.getItems().addAll(Model.getSeason());
+        boxTeam.getItems().addAll(Model.getTeam());
     }
 
 	public void setModel(Model model) {
 		this.model = model;
-		boxSeason.getItems().addAll(model.getSeason());
-		boxTeam.getItems().addAll(model.getTeam());
+	
 	}
 }

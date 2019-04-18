@@ -5,7 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.management.RuntimeErrorException;
 
@@ -44,7 +46,7 @@ public class SerieADAO {
 		}
 	}
 	
-	public List<Team> listTeams() {
+	public  List<Team> listTeams() {
 		String sql = "SELECT team FROM teams" ;
 		
 		List<Team> result = new ArrayList<>() ;
@@ -70,100 +72,91 @@ public class SerieADAO {
 	}
 
 	public void popolaGrafo(SimpleDirectedWeightedGraph<Team, DefaultWeightedEdge> grafo, Season stagione) {
-		String sql=" select m.HomeTeam as casa, m.AwayTeam as trasferta, ftr as result " + 
-				"from matches as m , seasons as s, teams as t1, teams as t2 " + 
-				"where t1.team=m.HomeTeam " + 
-				"and t2.team=m.AwayTeam " + 
-				"and s.season=m.Season " + 
-				"and s.season=? ";
+		String sql=" select HomeTeam as ht, AwayTeam as at, " + 
+				"case " + 
+				"when ftr=\"H\" then 1 " + 
+				"when ftr=\"A\" then -1 " + 
+				"else 0 " + 
+				"end as peso " + 
+				"from matches  " + 
+				"where season=? ";
 		
-		double peso=0.0;
-					
+		
+
 		Connection conn = DBConnect.getConnection() ;
 		
 		try {
 			PreparedStatement st = conn.prepareStatement(sql) ;
 			st.setInt(1, stagione.getSeason());
 			ResultSet res = st.executeQuery() ;
+			Map<Team,Team> puntiTeam=new HashMap<>();
 			
 			while(res.next()) {
-				
-				String teamCasa=res.getString("casa");
-				String teamTrasferta=res.getString("trasferta");
-				String risultato=res.getString("result");
-				
-				Team casa=new Team(teamCasa);
-				Team trasferta=new Team(teamTrasferta);
+				String casa=res.getString("ht");
+				String trasferta=res.getString("at");
+				double peso=res.getDouble("peso");
+				int punteggioCasa=0;
+				int punteggioTrasferta=0;
 				
 				
-				if(!grafo.containsVertex(casa)) {
-					grafo.addVertex(casa);
+				if (peso == 1) {
+					punteggioCasa = 3;
+					punteggioTrasferta=0;
+					
+				} else if (peso == -1) {
+					punteggioCasa = 0;
+					punteggioTrasferta=3;
+					
+				} else {
+					punteggioCasa = 1;
+					punteggioTrasferta=1;
 				}
-				if(!grafo.containsVertex(trasferta)) {
-					grafo.addVertex(trasferta);
-				}
-				if(risultato.compareTo("H")==0) {
-					peso=1;
-				}else if(risultato.compareTo("A") ==0) {
-					peso=-1;
-				}
-				else if(risultato.compareTo("D")== 0) {
-					peso=0;
-				}
-				Graphs.addEdge(grafo, casa, trasferta, peso);
+
+				Team t1=new Team(casa);
+				Team t2=new Team(trasferta);
 				
+				if(!puntiTeam.containsKey(t1) ) {
+					puntiTeam.put(t1, t1);
 				
+				}
+				if(!puntiTeam.containsKey(t2)) {
+					puntiTeam.put(t2, t2);
+				}
+				
+				if(!grafo.containsVertex(t1)) {
+					grafo.addVertex(puntiTeam.get(t1));
+				}
+				if(!grafo.containsVertex(t2)) {
+					grafo.addVertex(puntiTeam.get(t2));
+				}
+				
+				if(!grafo.containsEdge(t1, t2) ) {
+					DefaultWeightedEdge edge = grafo.addEdge(puntiTeam.get(t1),puntiTeam.get(t2));
+					grafo.setEdgeWeight(edge, peso);
+					puntiTeam.get(t1).setPunteggio(punteggioCasa);
+					puntiTeam.get(t2).setPunteggio(punteggioTrasferta);
+			//	}
+				} else {
+
+					puntiTeam.get(t1).setPunteggio(punteggioCasa);
+					puntiTeam.get(t2).setPunteggio(punteggioTrasferta);
+				}
+				
+//					puntiTeam.get(t1).setPunteggio(punteggioCasa);
+//					puntiTeam.get(t2).setPunteggio(punteggioTrasferta);
 			}
 			
 			conn.close();
 			
-		} catch (SQLException e) {
-			throw new RuntimeException("errore Db");
-			
-		}
-		
-		
-	}
-
-	public List<Match> calcolaClassifica(Season stagione) {
-		String sql=" select m.HomeTeam as casa, m.AwayTeam as trasferta, ftr as result " + 
-				"from matches as m , seasons as s, teams as t1, teams as t2 " + 
-				"where t1.team=m.HomeTeam " + 
-				"and t2.team=m.AwayTeam " + 
-				"and s.season=m.Season " + 
-				"and s.season=? ";
-		
-		List<Match> risultato=new ArrayList<Match>();
-		
-		Connection conn = DBConnect.getConnection() ;
-
-		try {
-			PreparedStatement st = conn.prepareStatement(sql);
-			st.setInt(1, stagione.getSeason());
-			ResultSet res = st.executeQuery();
-
-			while (res.next()) {
-				String teamCasa = res.getString("casa");
-				String teamTrasferta = res.getString("trasferta");
-				String result = res.getString("result");
-
-				Team inCasa = new Team(teamCasa);
-				Team inTrasferta = new Team(teamTrasferta);
-
-				Match m = new Match(inTrasferta, inTrasferta, result);
-				risultato.add(m);
-			}
-
-			conn.close();
-
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
+		
 		}
-		return risultato;
-
+		
+		
 	}
+
+	
 
 
 }

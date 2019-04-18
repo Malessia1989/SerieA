@@ -8,36 +8,41 @@ import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import it.polito.tdp.seriea.db.SerieADAO;
 
 public class Model {
-
-	private SimpleDirectedWeightedGraph<Team,DefaultWeightedEdge> grafo;
 	
-	public List <Season> getSeason() {
+	private SimpleDirectedWeightedGraph<Team, DefaultWeightedEdge> grafo;
 
-		SerieADAO dao=new SerieADAO();
+
+	public static List<Season> getSeason() {
+		SerieADAO dao= new SerieADAO();
 		return dao.listSeasons();
 	}
 
-	public List<Team> getTeam() {
-		SerieADAO dao=new SerieADAO();
+	public static List<Team> getTeam() {
+		SerieADAO dao= new SerieADAO();
 		return dao.listTeams();
 	}
 
-	public void caricaPartita(Season stagione) {
-		SerieADAO dao=new SerieADAO();
-		List<Match> classifica=dao.calcolaClassifica(stagione);
+	public String getClassifica(Season stagione) {
 		
+		String classifica=" ";
 		grafo=new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+		
+		SerieADAO dao= new SerieADAO();
 		dao.popolaGrafo(grafo,stagione);
-		
-		
-		for(Match m:classifica) {
-			if (m.getFtr().compareTo("H")==0) {
-				m.getHomeTeam().calcolaPunteggio();
-			}
+		List<Team> team= new LinkedList<Team>(grafo.vertexSet());
+		Collections.sort(team);
+		for(Team t:team) {
+			classifica+= t.getTeam() + " "+ t.getPunteggio()+"\n";
 		}
+		
+		
+		return classifica;
+	}
+
+	
 		
 	
 		
-	}
+	
 
 }
